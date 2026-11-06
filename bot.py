@@ -21,7 +21,7 @@ BOT_TOKEN = "9085444422:AAFZtyBKErXiHt7er9jqowfZp_pI2Zyav2Q"
 OWNER_IDS = {5635425261, 8808819557}  # Admin IDs
 
 # Apnar Google Apps Script Web App URL
-GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyjLKejQu63LD3kB8kYB5-AVaJps0s1w7IP1JKSG7zYvhAsytyEdMx66uHerypkPXU/exec"
+GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzGMUKHieZxSQYb9d6cO831kGqfrwtzcpIMkQDAeKwVBpi2h7h3a5l5RyLzdAPTWGQ/exec"
 
 # Data base file path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if '__file__' in locals() else os.getcwd()
