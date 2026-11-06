@@ -21,7 +21,7 @@ BOT_TOKEN = "9085444422:AAFZtyBKErXiHt7er9jqowfZp_pI2Zyav2Q"
 OWNER_IDS = {5635425261, 8808819557}  # Admin IDs
 
 # Apnar Google Apps Script Web App URL
-GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzGMUKHieZxSQYb9d6cO831kGqfrwtzcpIMkQDAeKwVBpi2h7h3a5l5RyLzdAPTWGQ/exec"
+GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyjLKejQu63LD3kB8kYB5-AVaJps0s1w7IP1JKSG7zYvhAsytyEdMx66uHerypkPXU/exec"
 
 # Data base file path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if '__file__' in locals() else os.getcwd()
@@ -73,10 +73,18 @@ def send_to_google_sheet(user):
     if not GAS_WEB_APP_URL:
         return
     try:
+        # ইউজার নেম, ইউ আইডি এবং ডিসপ্লে নেম সঠিকভাবে ফরম্যাট করা
+        username = f"@{user.username}" if user.username else "N/A"
+        first_name = user.first_name or ""
+        last_name = user.last_name or ""
+        display_name = (first_name + " " + last_name).strip()
+        if not display_name:
+            display_name = user.full_name or "No Name"
+
         data = {
-            "user_id": user.id,
-            "full_name": user.full_name or "No Name",
-            "username": f"@{user.username}" if user.username else ""
+            "user_id": user.id,             # UID / Chat ID
+            "username": username,          # Username
+            "display_name": display_name   # Display Name
         }
         requests.post(GAS_WEB_APP_URL, json=data, timeout=5)
     except Exception as e:
@@ -127,7 +135,7 @@ def log_action(chat_id, user_id, action):
 
 def welcome_template(chat_id):
     con = db()
-    row = con.execute("SELECT welcome_text FROM chat_settings WHERE chat_id=?", (chat_id,)).fetchone()
+    row = con.execute("SELECT welcome_text FROM chat_settings WHERE chat_id=?", (chat.id,)).fetchone()
     con.close()
     return row[0] if row and row[0] else "🎉 স্বাগতম {mention}!\n\n<b>{group}</b>-এ আপনাকে আন্তরিকভাবে স্বাগতম ❤️"
 
@@ -704,7 +712,7 @@ def main():
     app.add_handler(CommandHandler("links", links_cmd))
     app.add_handler(CommandHandler("addlink", addlink_cmd))
     app.add_handler(CommandHandler("dellink", dellink_cmd))
-    app.add_handler(CommandHandler("addbackup", addbackup_cmd))
+    app.add_handler(Commandhandler("addbackup", addbackup_cmd))
     app.add_handler(CommandHandler("delbackup", delbackup_cmd))
     app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
