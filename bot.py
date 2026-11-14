@@ -18,7 +18,7 @@ from telegram.ext import (
 from telegram.request import HTTPXRequest
 
 BOT_TOKEN = "7787849898:AAEBlj_juMwH4h7KC9ZVgITupVojfTY23Ls"
-OWNER_IDS = {5635425261, 8785222370}  # Admin IDs
+OWNER_IDS = {5635425261, 8785222370, 7461715719}  # Admin IDs
 
 # Apnar Google Apps Script Web App URL
 GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyjLKejQu63LD3kB8kYB5-AVaJps0s1w7IP1JKSG7zYvhAsytyEdMx66uHerypkPXU/exec"
