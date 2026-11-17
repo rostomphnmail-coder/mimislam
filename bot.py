@@ -5,6 +5,7 @@ import logging
 import os
 import sqlite3
 import time
+import asyncio
 from html import escape
 import requests
 
@@ -244,7 +245,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if is_admin_auth(user.id):
         await update.effective_message.reply_text(
-            f"হ্যালো {username} ভাই! অ্যাডমিন প্যানেলে আপনাকে স্বাগতম।\n\n"
+            f"হ্যালো {username} ভাই! অ্যাডমিন প্যানেলে আপনাকে স্বাগতম。\n\n"
             "অ্যাডমিন কমান্ডসমূহ:\n"
             "/admin - অ্যাডমিন প্যানেল (গ্রুপ ও ইউজার ম্যানেজ করুন)\n"
             "/chats - কানেক্টেড চ্যাট লিস্ট\n"
@@ -636,6 +637,30 @@ async def chats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
 
+# --- 15K+ USERS MASS BROADCAST FUNCTION ---
+
+async def run_broadcast(bot, recipients, text, admin_chat_id):
+    success = 0
+    failed = 0
+    
+    for user_id in recipients:
+        try:
+            await bot.send_message(user_id, f"📢 <b>ঘোষণা:</b>\n\n{text}", parse_mode=ParseMode.HTML)
+            success += 1
+        except TelegramError:
+            failed += 1
+        # Telegram API rate limit (max ~30 msgs/sec) এড়াতে সামান্য বিরতি
+        await asyncio.sleep(0.04)
+        
+    try:
+        await bot.send_message(
+            admin_chat_id, 
+            f"📢 <b>ব্রডকাস্ট সম্পন্ন হয়েছে!</b>\n\n✅ সফলভাবে গেছে: <code>{success}</code> জনের কাছে\n❌ ব্যর্থ (বট ব্লক করেছে): <code>{failed}</code> জন"
+        , parse_mode=ParseMode.HTML)
+    except TelegramError:
+        pass
+
+
 async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private" or not is_admin_auth(update.effective_user.id):
         return
@@ -645,19 +670,29 @@ async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     con = db()
-    rows = con.execute("SELECT chat_id FROM chats WHERE status='active'").fetchall()
+    # bot_users টেবিল থেকে সমস্ত ইউজারের আইডি নেওয়া হচ্ছে (15k+ users)
+    user_rows = con.execute("SELECT user_id FROM bot_users").fetchall()
+    chat_rows = con.execute("SELECT chat_id FROM chats WHERE status='active'").fetchall()
     con.close()
     
-    success = 0
-    failed = 0
-    for (chat_id,) in rows:
-        try:
-            await context.bot.send_message(chat_id, f"📢 <b>ঘোষণা:</b>\n\n{text}", parse_mode=ParseMode.HTML)
-            success += 1
-        except TelegramError:
-            failed += 1
-            
-    await update.effective_message.reply_text(f"ব্রডকাস্ট সম্পন্ন!\n✅ সফল: {success}\n❌ ব্যর্থ: {failed}")
+    recipients = set()
+    for (uid,) in user_rows:
+        recipients.add(uid)
+    for (cid,) in chat_rows:
+        recipients.add(cid)
+
+    total_users = len(recipients)
+    if total_users == 0:
+        await update.effective_message.reply_text("❌ ডাটাবেজে কোনো ইউজার বা চ্যাট পাওয়া যায়নি!")
+        return
+
+    await update.effective_message.reply_text(
+        f"🚀 ব্রডকাস্ট ব্যাকগ্রাউন্ডে শুরু হয়ে গেছে!\n\nমোট লক্ষ্যমাত্রা: <b>{total_users}</b> জন।\nকাজ শেষ হলে আপনাকে নোটিফিকেশন জানানো হবে।",
+        parse_mode=ParseMode.HTML
+    )
+
+    # ব্যাকগ্রাউন্ডে ব্রডকাস্ট প্রসেস রান করার জন্য asyncio ব্যবহার করা হলো যাতে বট হ্যাং না করে
+    asyncio.create_task(run_broadcast(context.bot, recipients, text, update.effective_chat.id))
 
 
 async def setwelcome_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
